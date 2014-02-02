@@ -23,6 +23,7 @@
     "escodegen": "~1.1.0",
     "glob": "~3.2.8",
     "underscore": "~1.5.2",
-    "mustache": "~0.7.3"
+    "mustache": "~0.7.3",
+    "expressmount": "0.0.1"
   }
 }
