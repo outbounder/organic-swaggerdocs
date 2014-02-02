@@ -1,0 +1,28 @@
+{
+  "name": "organic-swaggerdocs",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "jasmine-node ./tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:outbounder/organic-swaggerdocs.git"
+  },
+  "author": "Boris Filipov",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/outbounder/organic-swaggerdocs/issues"
+  },
+  "homepage": "https://github.com/outbounder/organic-swaggerdocs",
+  "dependencies": {
+    "organic": "~0.1.1",
+    "st": "~0.2.3",
+    "esprima": "~1.0.4",
+    "escodegen": "~1.1.0",
+    "glob": "~3.2.8",
+    "underscore": "~1.5.2",
+    "mustache": "~0.7.3"
+  }
+}
