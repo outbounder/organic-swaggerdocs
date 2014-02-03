@@ -21,3 +21,16 @@ The implementation is based on [swagger UI](https://github.com/wordnik/swagger-u
       }]
     }
 
+### standalone
+
+    var express = require("express")
+    var app = express()
+    var swaggerdocs = require("organic-swaggerdocs")
+    swaggerdocs.call({
+      app: app
+    }, {
+      "mount": "/apidocs",
+      "apiEndpoint": "/api",
+      "dynamicDocumentation": "routes/api",
+      "log": true
+    })
