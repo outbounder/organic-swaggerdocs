@@ -58,7 +58,9 @@ var findActions = function(syntax) {
 var extractParameters = function(syntax, key) {
   var comments = findLeadingComments(syntax.body, key)
   try {
-    return comments?JSON.parse(comments[0].value).parameters:[]
+    if(!comments || comments.length == 0) return []
+    var value = JSON.parse(comments[0].value)
+    return value.parameters || []
   } catch(err) {
     return []
   }
@@ -126,6 +128,7 @@ module.exports = function index(config){
         var urlsuffix = key.split(" ")[1] || ""
         
         var parameters = extractParameters(syntax, key)
+        var autoSuggestParameters = parameters.length == 0
         var description = extractDescription(syntax, key)
         var operationPath = path.normalize("/"+name
           .replace(/-/g, "/")
@@ -134,7 +137,7 @@ module.exports = function index(config){
           .replace("index", "")
           +(key.split(" ")[1]?key.split(" ")[1]:""))
 
-        if(parameters.length == 0) {
+        if(autoSuggestParameters) {
           if(bodySupportedMethods.indexOf(method) > -1)
             parameters.push({
               "paramType": "body",
@@ -147,13 +150,14 @@ module.exports = function index(config){
         if(matches)
           for(var i = 0; i<matches.length; i++) {
             operationPath = operationPath.replace(matches[i], "{"+matches[i].replace(":","")+"}")
-            parameters.push({
-              "paramType": "path",
-              "name": matches[i].replace(":",""),
-              "dataType": "string",
-              "format": "string",
-              "required": true
-            })
+            if(autoSuggestParameters)
+              parameters.push({
+                "paramType": "path",
+                "name": matches[i].replace(":",""),
+                "dataType": "string",
+                "format": "string",
+                "required": true
+              })
           }
         result.apis.push({
           "path": operationPath,
