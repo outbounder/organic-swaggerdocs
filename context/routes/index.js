@@ -43,15 +43,15 @@ var findLeadingComments = function(syntax, key) {
 
 module.exports = function index(config){
   return {
-    "GET": [allowFromAll, function(req, res){
+    "GET /ui": [allowFromAll, function(req, res){
       fs.readFile(__dirname+"/../templates/index.stache", function(err, content){
         res.setHeader("content-type", "text/html")
         res.send(mustache.render(content.toString(), config))
       })
     }],
     "GET /modules": [allowFromAll, function(req, res, next){
-      fs.readdir(process.cwd()+"/"+config.dynamicDocumentation, function(err, files){
-        console.log(files)
+      var root = process.cwd()+"/"+config.dynamicDocumentation
+      glob(root+"/**/*.js", function(err, files){
         if(err) return next(err)
         var result = {
           "apiVersion": require(process.cwd()+"/package.json").version,
@@ -59,11 +59,11 @@ module.exports = function index(config){
           "apis": []
         }
         for(var i = 0; i<files.length; i++) {
-          var name = path.basename(files[i], path.extname(files[i]))
-          if(name == "index")
-            name = path.basename(process.cwd()+"/"+config.dynamicDocumentation)
-          result.apis.push({
-            path: "/"+name
+          var name = files[i].replace(root, "")
+          name = name.replace(/\//g, "-")
+          result.apis.push({ 
+            path: "/"+name, 
+            description: files[i].replace(root, "")
           })
         }
         res.send(result)
@@ -71,12 +71,7 @@ module.exports = function index(config){
     }],
     "GET /modules/*": [allowFromAll, function(req, res, next){
       var name = req.url.replace("/modules/", "")
-      if(path.basename(config.dynamicDocumentation) == name)
-        name = "index"
-      else
-        if(fs.existsSync(process.cwd()+"/"+config.dynamicDocumentation+"/"+name+"/index.js"))
-          name += "/index"
-      var filePath = process.cwd()+"/"+config.dynamicDocumentation+"/"+name+".js"
+      var filePath = process.cwd()+"/"+config.dynamicDocumentation+"/"+name.replace(/-/g, "/")
       var fileContents = fs.readFileSync(filePath)
       var actionFile = require(filePath)
       var actions = actionFile({})
@@ -86,7 +81,6 @@ module.exports = function index(config){
         "apiVersion": require(process.cwd()+"/package.json").version,
         "swaggerVersion": "1.2",
         "basePath": config.apiEndpoint,
-        "resourcePath": name != "index"?"/"+name.replace("/index",""):"",
         "apis": []
       }
       for(var key in actions) {
@@ -94,16 +88,19 @@ module.exports = function index(config){
         var urlsuffix = key.split(" ")[1] || ""
         var comments = findLeadingComments(syntax.body, key)
         var parameters = comments?JSON.parse(comments[0].value):[]
-        
+        var operationPath = path.normalize("/"+name
+          .replace(/-/g, "/")
+          .replace(".js", "")
+          .replace("/index", "")
+          .replace("index", "")
+          +(key.split(" ")[1]?key.split(" ")[1]:""))
         result.apis.push({
-          path: (urlsuffix == ""?"/":urlsuffix),
+          path: operationPath,
           "operations":[
             {
               "method": method,
               "nickname": key,
-              "summary":"missing summary",
-              "notes": "missing notes",
-              parameters: parameters
+              "parameters": parameters
             }
           ]
         })
