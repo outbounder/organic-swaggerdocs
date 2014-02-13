@@ -74,9 +74,12 @@ var extractDescription = function(syntax, key) {
 }
 
 module.exports = function index(config){
+  if(!config.template)
+    config.template = __dirname+"/../templates/index.stache"
+  
   return {
     "GET /ui": [allowFromAll, function(req, res){
-      fs.readFile(__dirname+"/../templates/index.stache", function(err, content){
+      fs.readFile(config.template, function(err, content){
         res.setHeader("content-type", "text/html")
         res.send(mustache.render(content.toString(), config))
       })
