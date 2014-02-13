@@ -41,6 +41,20 @@ var findLeadingComments = function(syntax, key) {
   })
 }
 
+var findActions = function(syntax) {
+  var documentMethods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  var result = {}
+  for(var i = 0; i<syntax.tokens.length; i++) {
+    if(syntax.tokens[i].type != "String") continue
+
+    var tokenValue = syntax.tokens[i].value.replace(/"/g, "").replace(/'/g, "")
+    var shouldDocument = _.intersection(tokenValue.split(" "), documentMethods).length > 0
+    if(shouldDocument)
+      result[tokenValue] = true
+  }
+  return result
+}
+
 module.exports = function index(config){
   return {
     "GET /ui": [allowFromAll, function(req, res){
@@ -70,13 +84,16 @@ module.exports = function index(config){
       })
     }],
     "GET /modules/*": [allowFromAll, function(req, res, next){
+      var bodySupportedMethods = ["POST", "PUT", "DELETE"]
       var name = req.url.replace("/modules/", "")
       var filePath = process.cwd()+"/"+config.dynamicDocumentation+"/"+name.replace(/-/g, "/")
       var fileContents = fs.readFileSync(filePath)
-      var actionFile = require(filePath)
-      var actions = actionFile({})
+      
       var syntax = esprima.parse(fileContents, { tokens: true, range: true, comment: true }); 
       syntax = escodegen.attachComments(syntax, syntax.comments, syntax.tokens); 
+
+      var actions = findActions(syntax)
+
       var result = {
         "apiVersion": require(process.cwd()+"/package.json").version,
         "swaggerVersion": "1.2",
@@ -94,6 +111,28 @@ module.exports = function index(config){
           .replace("/index", "")
           .replace("index", "")
           +(key.split(" ")[1]?key.split(" ")[1]:""))
+
+        if(parameters.length == 0) {
+          if(bodySupportedMethods.indexOf(method) > -1)
+            parameters.push({
+              "paramType": "body",
+              "name": "body",
+              "dataType": "json"
+            })
+        }
+
+        var matches = operationPath.match(/:(\w+)/g)
+        if(matches)
+          for(var i = 0; i<matches.length; i++) {
+            operationPath = operationPath.replace(matches[i], "{"+matches[i].replace(":","")+"}")
+            parameters.push({
+              "paramType": "path",
+              "name": matches[i].replace(":",""),
+              "dataType": "string",
+              "format": "string",
+              "required": true
+            })
+          }
         result.apis.push({
           path: operationPath,
           "operations":[
