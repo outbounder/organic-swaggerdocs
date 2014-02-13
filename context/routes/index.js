@@ -55,6 +55,24 @@ var findActions = function(syntax) {
   return result
 }
 
+var extractParameters = function(syntax, key) {
+  var comments = findLeadingComments(syntax.body, key)
+  try {
+    return comments?JSON.parse(comments[0].value).parameters:[]
+  } catch(err) {
+    return []
+  }
+}
+
+var extractDescription = function(syntax, key) {
+  var comments = findLeadingComments(syntax.body, key)
+  try {
+    return comments?JSON.parse(comments[0].value).description:""
+  } catch(err) {
+    return comments?comments[0].value:""
+  }
+}
+
 module.exports = function index(config){
   return {
     "GET /ui": [allowFromAll, function(req, res){
@@ -103,8 +121,9 @@ module.exports = function index(config){
       for(var key in actions) {
         var method = key.split(" ")[0]
         var urlsuffix = key.split(" ")[1] || ""
-        var comments = findLeadingComments(syntax.body, key)
-        var parameters = comments?JSON.parse(comments[0].value):[]
+        
+        var parameters = extractParameters(syntax, key)
+        var description = extractDescription(syntax, key)
         var operationPath = path.normalize("/"+name
           .replace(/-/g, "/")
           .replace(".js", "")
@@ -134,12 +153,14 @@ module.exports = function index(config){
             })
           }
         result.apis.push({
-          path: operationPath,
+          "path": operationPath,
           "operations":[
             {
               "method": method,
               "nickname": key,
-              "parameters": parameters
+              "parameters": parameters,
+              "notes": description,
+              "summary": operationPath
             }
           ]
         })

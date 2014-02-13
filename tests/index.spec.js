@@ -18,7 +18,7 @@ describe("index", function(){
       // last-1 == public folder
       // last == api actions folder
       expect(app.stack.pop().route).toBe("/apidocs")
-      expect(app.stack.pop().route).toBe("/apidocs")
+      expect(app.stack.pop().route).toBe("")
       server.close()
     })
     
